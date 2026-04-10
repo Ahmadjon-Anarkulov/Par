@@ -24,9 +24,9 @@ management:
 bot:
   token: ${BOT_TOKEN:}           # если переменная не задана → пустая строка
   username: ${BOT_USERNAME:}     # если переменная не задана → пустая строка
-  mode: ${BOT_MODE:long_polling} # long_polling | webhook
+  mode: ${BOT_MODE:webhook} # long_polling | webhook
   webhook:
-    enabled: ${BOT_WEBHOOK_ENABLED:false}
+    enabled: ${BOT_WEBHOOK_ENABLED:true}
     public-url: ${BOT_WEBHOOK_PUBLIC_URL:}
     path: ${BOT_WEBHOOK_PATH:/telegram/webhook}
     secret-token: ${BOT_WEBHOOK_SECRET_TOKEN:}
