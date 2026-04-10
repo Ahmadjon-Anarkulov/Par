@@ -67,5 +67,9 @@
             if (path.startsWith("/")) return path;
             return "/" + path;
         }
+
+        public BotProperties getBotProperties() {
+            return null;
+        }
     }
 

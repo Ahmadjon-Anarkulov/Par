@@ -4,6 +4,6 @@ bot:
   mode: webhook                    # ← изменил с long_polling на webhook
   webhook:
     enabled: true
-    public-url: "https://par-t8r6.onrender.com"   # ← ОБЯЗАТЕЛЬНО поменяй на свой актуальный URL
+    public-url: "https://par-t8r6.onrender.com/"   # ← ОБЯЗАТЕЛЬНО поменяй на свой актуальный URL
     path: "/telegram/webhook"
     secret-token: ""
