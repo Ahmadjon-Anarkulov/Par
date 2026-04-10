@@ -31,7 +31,7 @@ public class TelegramConfig {
         return new TelegramBotsApi(DefaultBotSession.class);
     }
 
-    @EventListener(ApplicationReadyEvent.class)
+
     public void startBots(TelegramBotsApi api,
                           LongPollingParlamentBot longPollingBot,
                           TelegramSenderClient senderClient) throws TelegramApiException {
