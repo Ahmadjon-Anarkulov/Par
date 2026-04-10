@@ -8,7 +8,6 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.telegram.telegrambots.meta.TelegramBotsApi;
-import org.telegram.telegrambots.updatesreceivers.DefaultBotSession;
 
 @SpringBootApplication
 public class ParlamentBotApplication {
@@ -18,12 +17,12 @@ public class ParlamentBotApplication {
     }
 
     /**
-     * Запуск Telegram бота после полной инициализации Spring контекста
+     * Запуск Telegram бота после инициализации Spring
      */
     @Bean
     public CommandLineRunner startBot(
             TelegramConfig telegramConfig,
-            TelegramBotsApi telegramBotsApi,
+            TelegramBotsApi telegramBotsApi,      // берем из TelegramConfig
             LongPollingParlamentBot longPollingBot,
             TelegramSenderClient senderClient) {
 
@@ -33,21 +32,12 @@ public class ParlamentBotApplication {
 
                 telegramConfig.startBots(telegramBotsApi, longPollingBot, senderClient);
 
-                System.out.println("✅ Бот успешно запущен в режиме: " +
-                        telegramConfig.getBotProperties().getMode());
+                System.out.println("✅ Бот успешно запущен!");
 
             } catch (Exception e) {
-                System.err.println("❌ Ошибка при запуске бота:");
+                System.err.println("❌ Критическая ошибка при запуске бота:");
                 e.printStackTrace();
             }
         };
-    }
-
-    /**
-     * Создаём TelegramBotsApi (нужен для регистрации бота)
-     */
-    @Bean
-    public TelegramBotsApi telegramBotsApi() throws Exception {
-        return new TelegramBotsApi(DefaultBotSession.class);
     }
 }
