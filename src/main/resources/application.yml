@@ -1,38 +1,9 @@
-spring:
-  application:
-    name: parlament-bot
-  lifecycle:
-    timeout-per-shutdown-phase: 30s
-
-server:
-  port: ${PORT:8080}        # Render передаёт 10000, локально будет 8080
-  address: 0.0.0.0          # ← Это очень важно! Привязываемся ко всем интерфейсам
-  shutdown: graceful
-
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,info,metrics,prometheus
-  endpoint:
-    health:
-      probes:
-        enabled: true
-      show-details: never
-
-# ==================== BOT CONFIG ====================
 bot:
-  token: ${BOT_TOKEN:}           # если переменная не задана → пустая строка
-  username: ${BOT_USERNAME:}     # если переменная не задана → пустая строка
-  mode: ${BOT_MODE:webhook} # long_polling | webhook
+  token: ${BOT_TOKEN:}
+  username: ${BOT_USERNAME:}
+  mode: webhook                    # ← изменил с long_polling на webhook
   webhook:
-    enabled: ${BOT_WEBHOOK_ENABLED:true}
-    public-url: ${BOT_WEBHOOK_PUBLIC_URL:}
-    path: ${BOT_WEBHOOK_PATH:/telegram/webhook}
-    secret-token: ${BOT_WEBHOOK_SECRET_TOKEN:}
-
-logging:
-  level:
-    root: INFO
-    com.parlament: INFO
-    org.telegram: WARN
+    enabled: true
+    public-url: "https://par-t8r6.onrender.com"   # ← ОБЯЗАТЕЛЬНО поменяй на свой актуальный URL
+    path: "/telegram/webhook"
+    secret-token: ""
