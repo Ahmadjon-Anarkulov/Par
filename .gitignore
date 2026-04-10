@@ -1,0 +1,31 @@
+# Maven
+target/
+dependency-reduced-pom.xml
+
+# Logs
+*.log
+logs/
+
+# Secrets
+.env
+.env.local
+.env.*.local
+bot.properties
+
+# IntelliJ / Cursor
+.idea/
+*.iml
+*.iws
+out/
+
+# VS Code
+.vscode/
+
+# Eclipse
+.classpath
+.project
+.settings/
+
+# OS
+.DS_Store
+Thumbs.db

@@ -1,0 +1,36 @@
+spring:
+  application:
+    name: parlament-bot
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
+
+server:
+  port: ${PORT:8080}
+  shutdown: graceful
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: never
+
+bot:
+  token: ${BOT_TOKEN:}
+  username: ${BOT_USERNAME:}
+  mode: ${BOT_MODE:long_polling} # long_polling | webhook
+  webhook:
+    enabled: ${BOT_WEBHOOK_ENABLED:false}
+    public-url: ${BOT_WEBHOOK_PUBLIC_URL:} # e.g. https://<railway-domain>
+    path: ${BOT_WEBHOOK_PATH:/telegram/webhook}
+    secret-token: ${BOT_WEBHOOK_SECRET_TOKEN:} # optional: validate request header
+
+logging:
+  level:
+    root: INFO
+    com.parlament: INFO
+    org.telegram: WARN

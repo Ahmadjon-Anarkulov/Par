@@ -1,0 +1,10 @@
+target
+.idea
+.vscode
+logs
+*.log
+.env
+.env.*
+README.md
+*.iml
+
