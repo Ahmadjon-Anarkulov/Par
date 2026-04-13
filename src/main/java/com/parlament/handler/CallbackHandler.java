@@ -2,6 +2,7 @@ package com.parlament.handler;
 
 import com.parlament.model.*;
 import com.parlament.repository.ProductRepository;
+import com.parlament.service.AdminService;
 import com.parlament.service.CartService;
 import com.parlament.service.OrderService;
 import com.parlament.service.SessionService;
@@ -32,15 +33,18 @@ public class CallbackHandler {
     private final OrderService orderService;
     private final SessionService sessionService;
     private final ProductRepository productRepository;
+    private final AdminService adminService;
 
     public CallbackHandler(CartService cartService,
                            OrderService orderService,
                            SessionService sessionService,
-                           ProductRepository productRepository) {
+                           ProductRepository productRepository,
+                           AdminService adminService) {
         this.cartService = cartService;
         this.orderService = orderService;
         this.sessionService = sessionService;
         this.productRepository = productRepository;
+        this.adminService = adminService;
     }
 
     public void handle(Update update, TelegramBotSender sender) {
@@ -57,6 +61,10 @@ public class CallbackHandler {
 
         if (data.equals(KeyboardFactory.CB_BACK_MAIN)) {
             showMainMenu(sender, chatId, cb.getFrom().getFirstName(), userId);
+        } else if (data.startsWith(KeyboardFactory.CB_ADMIN_VIEW_PREFIX)
+                || data.startsWith(KeyboardFactory.CB_ADMIN_ACCEPT_PREFIX)
+                || data.startsWith(KeyboardFactory.CB_ADMIN_REJECT_PREFIX)) {
+            handleAdminCallback(sender, chatId, userId, data);
         } else if (data.equals(KeyboardFactory.CB_CATALOG)) {
             showCatalog(sender, chatId);
         } else if (data.startsWith(KeyboardFactory.CB_CAT_PREFIX)) {
@@ -81,6 +89,34 @@ public class CallbackHandler {
             cancelCheckout(sender, chatId, userId);
         } else {
             log.warn("Unknown callback data: {}", data);
+        }
+    }
+
+    private void handleAdminCallback(TelegramBotSender sender, long chatId, long userId, String data) {
+        if (!adminService.isAdmin(userId)) {
+            sender.sendText(buildMessage(chatId, "⛔ Доступ запрещён. Действие доступно только администраторам."));
+            return;
+        }
+
+        if (data.startsWith(KeyboardFactory.CB_ADMIN_VIEW_PREFIX)) {
+            String orderId = data.substring(KeyboardFactory.CB_ADMIN_VIEW_PREFIX.length());
+            orderService.findById(orderId).ifPresentOrElse(order -> {
+                sender.sendText(buildMessage(chatId, MessageFormatter.orderConfirmationMessage(order)));
+            }, () -> sender.sendText(buildMessage(chatId, "⚠️ Заказ не найден: <code>" + orderId + "</code>")));
+            return;
+        }
+
+        if (data.startsWith(KeyboardFactory.CB_ADMIN_ACCEPT_PREFIX)) {
+            String orderId = data.substring(KeyboardFactory.CB_ADMIN_ACCEPT_PREFIX.length());
+            orderService.setStatus(orderId, Order.Status.PROCESSING);
+            sender.sendText(buildMessage(chatId, "✅ Заказ <code>" + orderId + "</code> принят в обработку."));
+            return;
+        }
+
+        if (data.startsWith(KeyboardFactory.CB_ADMIN_REJECT_PREFIX)) {
+            String orderId = data.substring(KeyboardFactory.CB_ADMIN_REJECT_PREFIX.length());
+            orderService.setStatus(orderId, Order.Status.CANCELLED);
+            sender.sendText(buildMessage(chatId, "❌ Заказ <code>" + orderId + "</code> отклонён."));
         }
     }
 

@@ -23,6 +23,10 @@ public class KeyboardFactory {
     public static final String CB_CLEAR_CART    = "clear_cart";
     public static final String CB_CANCEL        = "cancel";
 
+    public static final String CB_ADMIN_VIEW_PREFIX   = "admin_view:";
+    public static final String CB_ADMIN_ACCEPT_PREFIX = "admin_accept:";
+    public static final String CB_ADMIN_REJECT_PREFIX = "admin_reject:";
+
     public static final String CB_CAT_PREFIX    = "cat_";
     public static final String CB_PROD_PREFIX   = "prod_";
     public static final String CB_ADD_PREFIX    = "add_";
@@ -120,6 +124,18 @@ public class KeyboardFactory {
     public static InlineKeyboardMarkup backToMainKeyboard() {
         return markup(List.of(
             List.of(button("🏠 Главное меню", CB_BACK_MAIN))
+        ));
+    }
+
+    public static InlineKeyboardMarkup adminOrderNotificationKeyboard(String orderId) {
+        return markup(List.of(
+                List.of(
+                        button("👁 View Order", CB_ADMIN_VIEW_PREFIX + orderId),
+                        button("✅ Accept", CB_ADMIN_ACCEPT_PREFIX + orderId)
+                ),
+                List.of(
+                        button("❌ Reject", CB_ADMIN_REJECT_PREFIX + orderId)
+                )
         ));
     }
 

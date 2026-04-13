@@ -7,11 +7,13 @@ import com.parlament.model.Product;
 import com.parlament.persistence.entity.OrderEntity;
 import com.parlament.persistence.entity.OrderItemEntity;
 import com.parlament.persistence.repo.OrderJpaRepository;
+import com.parlament.persistence.repo.TelegramUserJpaRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -27,9 +29,15 @@ public class OrderService {
     private static final Logger log = LoggerFactory.getLogger(OrderService.class);
 
     private final OrderJpaRepository orderRepo;
+    private final NotificationService notificationService;
+    private final TelegramUserJpaRepository telegramUserRepo;
 
-    public OrderService(OrderJpaRepository orderRepo) {
+    public OrderService(OrderJpaRepository orderRepo,
+                        NotificationService notificationService,
+                        TelegramUserJpaRepository telegramUserRepo) {
         this.orderRepo = orderRepo;
+        this.notificationService = notificationService;
+        this.telegramUserRepo = telegramUserRepo;
     }
 
     /**
@@ -62,7 +70,15 @@ public class OrderService {
         }
         entity.setItems(itemEntities);
 
-        orderRepo.save(entity);
+        OrderEntity saved = orderRepo.save(entity);
+
+        BigDecimal totalAmount = items.stream()
+                .map(i -> i.getProduct().getPrice().multiply(BigDecimal.valueOf(i.getQuantity())))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        // Ensure user exists in DB before notifications (best-effort)
+        telegramUserRepo.findById(userId).orElse(null);
+        notificationService.notifyAdminsNewOrder(saved, totalAmount);
         log.info("Created order {} for user {} — total: {}", order.getOrderId(), userId, order.getFormattedTotal());
         return order;
     }
@@ -92,6 +108,15 @@ public class OrderService {
     @Transactional(readOnly = true)
     public int getOrderCount(long userId) {
         return (int) orderRepo.countByTelegramUserId(userId);
+    }
+
+    @Transactional
+    public Optional<Order> setStatus(String orderId, Order.Status status) {
+        return orderRepo.findById(orderId).map(entity -> {
+            entity.setStatus(status.name());
+            OrderEntity saved = orderRepo.save(entity);
+            return toDomain(saved);
+        });
     }
 
     private Order toDomain(OrderEntity entity) {

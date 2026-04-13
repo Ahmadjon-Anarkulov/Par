@@ -15,7 +15,7 @@
     import com.parlament.telegram.TelegramSenderClient;
 
     @Configuration
-    @EnableConfigurationProperties(BotProperties.class)
+    @EnableConfigurationProperties({BotProperties.class, AdminProperties.class})
     public class TelegramConfig {
 
         private static final Logger log = LoggerFactory.getLogger(TelegramConfig.class);
@@ -69,7 +69,7 @@
         }
 
         public BotProperties getBotProperties() {
-            return null;
+            return botProperties;
         }
     }
 

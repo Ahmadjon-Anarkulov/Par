@@ -8,10 +8,17 @@ bot:
     path: "/telegram/webhook"
     secret-token: ""
 
+admin:
+  # If there are NO admins in DB yet, these IDs will be promoted to ADMIN on startup.
+  # Example:
+  # initial-ids:
+  #   - 123456789
+  initial-ids: [1004193078]
+
 spring:
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/Parlament}
-    username: ${DB_USER:root}
+    username: ${DB_USER:postgres}
     password: ${DB_PASSWORD:root}
   jpa:
     hibernate:

@@ -1,6 +1,7 @@
 package com.parlament.handler;
 
 import com.parlament.service.CartService;
+import com.parlament.service.AdminService;
 import com.parlament.service.OrderService;
 import com.parlament.service.SessionService;
 import com.parlament.telegram.TelegramBotSender;
@@ -21,11 +22,16 @@ public class CommandHandler {
     private final CartService cartService;
     private final OrderService orderService;
     private final SessionService sessionService;
+    private final AdminService adminService;
 
-    public CommandHandler(CartService cartService, OrderService orderService, SessionService sessionService) {
+    public CommandHandler(CartService cartService,
+                          OrderService orderService,
+                          SessionService sessionService,
+                          AdminService adminService) {
         this.cartService = cartService;
         this.orderService = orderService;
         this.sessionService = sessionService;
+        this.adminService = adminService;
     }
 
     public void handle(Update update, TelegramBotSender sender) {
@@ -43,6 +49,8 @@ public class CommandHandler {
             case "/catalog" -> sender.sendText(buildCatalogMessage(chatId));
             case "/cart"    -> sender.sendText(buildCartMessage(chatId, userId));
             case "/orders"  -> sender.sendText(buildOrdersMessage(chatId, userId));
+            case "/admin"   -> handleAdmin(sender, chatId, userId);
+            case "/makeadmin" -> handleMakeAdmin(sender, chatId, userId, text);
             default         -> sender.sendText(buildMessage(chatId, MessageFormatter.unknownCommandMessage()));
         }
     }
@@ -63,6 +71,45 @@ public class CommandHandler {
                 + "/orders — История заказов\n"
                 + "/help — Показать это сообщение";
         sender.sendText(buildMessage(chatId, helpText));
+    }
+
+    private void handleAdmin(TelegramBotSender sender, long chatId, long userId) {
+        if (!adminService.isAdmin(userId)) {
+            sender.sendText(buildMessage(chatId, "⛔ Доступ запрещён. Команда доступна только администраторам."));
+            return;
+        }
+
+        String text = "🛡 <b>Admin Panel</b>\n\n"
+                + "Доступ подтверждён.\n"
+                + "Команды:\n"
+                + "<code>/makeadmin &lt;telegramId&gt;</code> — выдать права администратора.";
+        sender.sendText(buildMessage(chatId, text));
+    }
+
+    private void handleMakeAdmin(TelegramBotSender sender, long chatId, long actorId, String fullText) {
+        if (!adminService.isAdmin(actorId)) {
+            sender.sendText(buildMessage(chatId, "⛔ Доступ запрещён. Команда доступна только администраторам."));
+            return;
+        }
+
+        String[] parts = fullText.trim().split("\\s+");
+        if (parts.length < 2) {
+            sender.sendText(buildMessage(chatId, "Использование: <code>/makeadmin &lt;telegramId&gt;</code>"));
+            return;
+        }
+
+        try {
+            long targetId = Long.parseLong(parts[1]);
+            adminService.promoteToAdmin(actorId, targetId);
+            sender.sendText(buildMessage(chatId, "✅ Пользователь <code>" + targetId + "</code> теперь ADMIN."));
+        } catch (NumberFormatException e) {
+            sender.sendText(buildMessage(chatId, "⚠️ Некорректный telegramId. Пример: <code>/makeadmin 123456789</code>"));
+        } catch (SecurityException se) {
+            sender.sendText(buildMessage(chatId, "⛔ " + se.getMessage()));
+        } catch (Exception ex) {
+            log.warn("makeadmin failed actor={}: {}", actorId, ex.getMessage(), ex);
+            sender.sendText(buildMessage(chatId, "⚠️ Не удалось выполнить команду. Проверьте логи."));
+        }
     }
 
     private SendMessage buildCatalogMessage(long chatId) {
