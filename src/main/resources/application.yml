@@ -11,8 +11,8 @@ bot:
 spring:
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/Parlament}
-    username: ${DB_USER:parlament}
-    password: ${DB_PASSWORD:parlament}
+    username: ${DB_USER:root}
+    password: ${DB_PASSWORD:root}
   jpa:
     hibernate:
       ddl-auto: validate
