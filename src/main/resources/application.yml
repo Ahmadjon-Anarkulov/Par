@@ -7,3 +7,20 @@ bot:
     public-url: "https://par-t8r6.onrender.com/"   # ← ОБЯЗАТЕЛЬНО поменяй на свой актуальный URL
     path: "/telegram/webhook"
     secret-token: ""
+
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/Parlament}
+    username: ${DB_USER:parlament}
+    password: ${DB_PASSWORD:parlament}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+    open-in-view: false
+  flyway:
+    enabled: true
+    baseline-on-migrate: true

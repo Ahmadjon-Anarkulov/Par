@@ -22,13 +22,13 @@ public class Order {
         public String getDisplayName() { return displayName; }
     }
 
-    private final String orderId;
-    private final long userId;
-    private final List<CartItem> items;
-    private final String customerName;
-    private final String phoneNumber;
-    private final String deliveryAddress;
-    private final LocalDateTime createdAt;
+    private String orderId;
+    private long userId;
+    private List<CartItem> items;
+    private String customerName;
+    private String phoneNumber;
+    private String deliveryAddress;
+    private LocalDateTime createdAt;
     private Status status;
 
     public Order(long userId, List<CartItem> items,
@@ -41,6 +41,24 @@ public class Order {
         this.deliveryAddress = deliveryAddress;
         this.createdAt = LocalDateTime.now();
         this.status = Status.CONFIRMED;
+    }
+
+    public Order(String orderId,
+                 long userId,
+                 List<CartItem> items,
+                 String customerName,
+                 String phoneNumber,
+                 String deliveryAddress,
+                 LocalDateTime createdAt,
+                 Status status) {
+        this.orderId = orderId;
+        this.userId = userId;
+        this.items = new ArrayList<>(items);
+        this.customerName = customerName;
+        this.phoneNumber = phoneNumber;
+        this.deliveryAddress = deliveryAddress;
+        this.createdAt = createdAt;
+        this.status = status;
     }
 
     private String generateOrderId() {

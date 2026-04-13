@@ -65,8 +65,8 @@ public class TextHandler {
                             "⚠️ Пожалуйста, введите корректное полное имя (не менее 2 символов)."));
                     return;
                 }
-                session.setCheckoutName(input);
-                session.setState(UserSession.State.AWAITING_PHONE);
+                sessionService.setCheckoutName(userId, input);
+                sessionService.setState(userId, UserSession.State.AWAITING_PHONE);
                 SendMessage msg = buildMessage(chatId, MessageFormatter.checkoutPhoneMessage(input));
                 msg.setReplyMarkup(KeyboardFactory.cancelKeyboard());
                 sender.sendText(msg);
@@ -78,8 +78,8 @@ public class TextHandler {
                             "⚠️ Введите корректный номер телефона, например: +7 900 123 45 67"));
                     return;
                 }
-                session.setCheckoutPhone(input);
-                session.setState(UserSession.State.AWAITING_ADDRESS);
+                sessionService.setCheckoutPhone(userId, input);
+                sessionService.setState(userId, UserSession.State.AWAITING_ADDRESS);
                 SendMessage msg = buildMessage(chatId, MessageFormatter.checkoutAddressMessage());
                 msg.setReplyMarkup(KeyboardFactory.cancelKeyboard());
                 sender.sendText(msg);
@@ -91,7 +91,7 @@ public class TextHandler {
                             "⚠️ Пожалуйста, введите полный адрес доставки (улица, город, индекс)."));
                     return;
                 }
-                session.setCheckoutAddress(input);
+                sessionService.setCheckoutAddress(userId, input);
                 completeOrder(sender, chatId, userId, session);
             }
 
@@ -100,9 +100,10 @@ public class TextHandler {
     }
 
     private void completeOrder(TelegramBotSender sender, long chatId, long userId, UserSession session) {
+        UserSession freshSession = sessionService.getOrCreate(userId);
         var cartItems = cartService.getCartSnapshot(userId);
         if (cartItems.isEmpty()) {
-            session.resetCheckout();
+            sessionService.resetCheckout(userId);
             SendMessage msg = buildMessage(chatId, MessageFormatter.emptyCartMessage());
             msg.setReplyMarkup(KeyboardFactory.cartKeyboard(false));
             sender.sendText(msg);
@@ -112,13 +113,13 @@ public class TextHandler {
         Order order = orderService.createOrder(
                 userId,
                 cartItems,
-                session.getCheckoutName(),
-                session.getCheckoutPhone(),
-                session.getCheckoutAddress()
+                freshSession.getCheckoutName(),
+                freshSession.getCheckoutPhone(),
+                freshSession.getCheckoutAddress()
         );
 
         cartService.clearCart(userId);
-        session.resetCheckout();
+        sessionService.resetCheckout(userId);
 
         log.info("Заказ {} оформлен пользователем {} — итого: {}", order.getOrderId(), userId, order.getFormattedTotal());
 

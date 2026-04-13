@@ -3,6 +3,7 @@ package com.parlament.telegram;
 import com.parlament.handler.CallbackHandler;
 import com.parlament.handler.CommandHandler;
 import com.parlament.handler.TextHandler;
+import com.parlament.service.TelegramUserService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -17,15 +18,18 @@ public class UpdateProcessor {
     private final CommandHandler commandHandler;
     private final CallbackHandler callbackHandler;
     private final TextHandler textHandler;
+    private final TelegramUserService telegramUserService;
 
     public UpdateProcessor(UpdateValidator validator,
                            CommandHandler commandHandler,
                            CallbackHandler callbackHandler,
-                           TextHandler textHandler) {
+                           TextHandler textHandler,
+                           TelegramUserService telegramUserService) {
         this.validator = validator;
         this.commandHandler = commandHandler;
         this.callbackHandler = callbackHandler;
         this.textHandler = textHandler;
+        this.telegramUserService = telegramUserService;
     }
 
     public void handle(Update update, TelegramBotSender sender) {
@@ -35,6 +39,12 @@ public class UpdateProcessor {
         }
 
         try {
+            if (update.hasMessage() && update.getMessage().getFrom() != null) {
+                telegramUserService.upsertFromTelegram(update.getMessage().getFrom());
+            } else if (update.hasCallbackQuery() && update.getCallbackQuery().getFrom() != null) {
+                telegramUserService.upsertFromTelegram(update.getCallbackQuery().getFrom());
+            }
+
             if (update.hasMessage() && update.getMessage().hasText()) {
                 String text = update.getMessage().getText().trim();
                 if (text.startsWith("/")) {
