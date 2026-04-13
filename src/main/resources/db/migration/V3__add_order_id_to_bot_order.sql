@@ -1,17 +1,14 @@
--- V3: Добавляем колонку order_id в таблицу bot_order
+-- V3: No-op migration (legacy cleanup).
+-- The project uses bot_order.order_id (varchar) as the primary key.
+-- Older drafts referenced a separate "order" table; this migration is kept to preserve Flyway version history.
 
--- 1. Добавляем колонку (если её ещё нет)
-ALTER TABLE bot_order
-    ADD COLUMN IF NOT EXISTS order_id BIGINT;
+DO $$
+BEGIN
+    IF EXISTS (select 1 from pg_constraint where conname = 'fk_bot_order_order') THEN
+        EXECUTE 'alter table bot_order drop constraint fk_bot_order_order';
+    END IF;
 
--- 2. Добавляем внешний ключ (foreign key)
--- Замени `order` на реальное имя таблицы заказов, если она называется иначе!
-ALTER TABLE bot_order
-    ADD CONSTRAINT fk_bot_order_order
-        FOREIGN KEY (order_id)
-            REFERENCES "order"(id)
-            ON DELETE SET NULL;   -- Можно изменить на CASCADE или RESTRICT
-
--- 3. Создаём индекс для быстрого поиска (рекомендуется)
-CREATE INDEX IF NOT EXISTS idx_bot_order_order_id
-    ON bot_order (order_id);
+    IF EXISTS (select 1 from pg_class where relname = 'idx_bot_order_order_id') THEN
+        EXECUTE 'drop index if exists idx_bot_order_order_id';
+    END IF;
+END $$;
