@@ -6,6 +6,7 @@ import com.parlament.model.Product;
 import com.parlament.persistence.entity.OrderEntity;
 import com.parlament.persistence.repo.OrderJpaRepository;
 import com.parlament.persistence.repo.TelegramUserJpaRepository;
+import com.parlament.repository.ProductRepository;
 import com.parlament.telegram.TelegramBotSender;
 import org.junit.jupiter.api.Test;
 
@@ -55,10 +56,19 @@ class OrderServiceTest {
 
         NotificationService notificationService = new NotificationService(sender, adminService, telegramUserRepo);
 
-        OrderService service = new OrderService(repo, notificationService, telegramUserRepo);
+        Product p = new Product("p1", "Test", "desc", new BigDecimal("10.00"), "img", Category.SUITS);
+        ProductRepository productRepo = (ProductRepository) Proxy.newProxyInstance(
+                ProductRepository.class.getClassLoader(),
+                new Class[]{ProductRepository.class},
+                (proxy, method, args) -> switch (method.getName()) {
+                    case "findById" -> Optional.of(p);
+                    default -> null;
+                }
+        );
+
+        OrderService service = new OrderService(repo, notificationService, telegramUserRepo, productRepo);
         long userId = 7L;
 
-        Product p = new Product("p1", "Test", "desc", new BigDecimal("10.00"), "img", Category.SUITS);
         List<CartItem> items = List.of(new CartItem(p));
 
         service.createOrder(userId, items, "John", "+7000", "Address");

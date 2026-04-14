@@ -28,14 +28,14 @@ public class LongPollingParlamentBot extends TelegramLongPollingBot implements T
     private final UpdateProcessor processor;
 
     public LongPollingParlamentBot(BotProperties props, UpdateProcessor processor) {
-        super(props.getToken());
+        super(props.getTokenOrEmpty());
         this.props = props;
         this.processor = processor;
     }
 
     @Override
     public String getBotUsername() {
-        return props.getUsername();
+        return props.getUsernameOrEmpty();
     }
 
     @Override

@@ -27,13 +27,13 @@ public class TelegramSenderClient extends TelegramLongPollingBot implements Tele
     private final BotProperties props;
 
     public TelegramSenderClient(BotProperties props) {
-        super(props.getToken());
+        super(props.getTokenOrEmpty());
         this.props = props;
     }
 
     @Override
     public String getBotUsername() {
-        return props.getUsername();
+        return props.getUsernameOrEmpty();
     }
 
     @Override

@@ -3,6 +3,8 @@ package com.parlament;
 import com.parlament.config.TelegramConfig;
 import com.parlament.telegram.LongPollingParlamentBot;
 import com.parlament.telegram.TelegramSenderClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -11,6 +13,8 @@ import org.telegram.telegrambots.meta.TelegramBotsApi;
 
 @SpringBootApplication
 public class ParlamentBotApplication {
+
+    private static final Logger log = LoggerFactory.getLogger(ParlamentBotApplication.class);
 
     public static void main(String[] args) {
         SpringApplication.run(ParlamentBotApplication.class, args);
@@ -28,15 +32,11 @@ public class ParlamentBotApplication {
 
         return args -> {
             try {
-                System.out.println("🚀 Запуск Telegram бота...");
-
+                log.info("Starting Telegram bot integration...");
                 telegramConfig.startBots(telegramBotsApi, longPollingBot, senderClient);
-
-                System.out.println("✅ Бот успешно запущен!");
-
+                log.info("Telegram startup routine finished.");
             } catch (Exception e) {
-                System.err.println("❌ Критическая ошибка при запуске бота:");
-                e.printStackTrace();
+                log.error("Unexpected error during Telegram startup routine", e);
             }
         };
     }

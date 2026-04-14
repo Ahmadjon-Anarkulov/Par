@@ -8,6 +8,7 @@ import com.parlament.persistence.entity.OrderEntity;
 import com.parlament.persistence.entity.OrderItemEntity;
 import com.parlament.persistence.repo.OrderJpaRepository;
 import com.parlament.persistence.repo.TelegramUserJpaRepository;
+import com.parlament.repository.ProductRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -31,13 +32,16 @@ public class OrderService {
     private final OrderJpaRepository orderRepo;
     private final NotificationService notificationService;
     private final TelegramUserJpaRepository telegramUserRepo;
+    private final ProductRepository productRepo;
 
     public OrderService(OrderJpaRepository orderRepo,
                         NotificationService notificationService,
-                        TelegramUserJpaRepository telegramUserRepo) {
+                        TelegramUserJpaRepository telegramUserRepo,
+                        ProductRepository productRepo) {
         this.orderRepo = orderRepo;
         this.notificationService = notificationService;
         this.telegramUserRepo = telegramUserRepo;
+        this.productRepo = productRepo;
     }
 
     /**
@@ -123,14 +127,23 @@ public class OrderService {
         List<CartItem> items = new ArrayList<>();
         if (entity.getItems() != null) {
             for (OrderItemEntity itemEntity : entity.getItems()) {
-                Product p = new Product(
-                        itemEntity.getProductId(),
-                        itemEntity.getProductName(),
-                        "",
-                        itemEntity.getUnitPrice(),
-                        "",
-                        Category.ACCESSORIES
-                );
+                Product p = productRepo.findById(itemEntity.getProductId())
+                        .map(catalogProduct -> new Product(
+                                catalogProduct.getId(),
+                                itemEntity.getProductName(),
+                                catalogProduct.getDescription(),
+                                itemEntity.getUnitPrice(),
+                                catalogProduct.getImageUrl(),
+                                catalogProduct.getCategory()
+                        ))
+                        .orElseGet(() -> new Product(
+                                itemEntity.getProductId(),
+                                itemEntity.getProductName(),
+                                "",
+                                itemEntity.getUnitPrice(),
+                                "",
+                                Category.ACCESSORIES
+                        ));
                 items.add(new CartItem(p, itemEntity.getQuantity()));
             }
         }

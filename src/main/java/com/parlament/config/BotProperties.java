@@ -1,24 +1,18 @@
 package com.parlament.config;
 
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotBlank;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.validation.annotation.Validated;
 
-@Validated
 @ConfigurationProperties(prefix = "bot")
 public class BotProperties {
 
-    @NotBlank
     private String token;
 
-    @NotBlank
     private String username;
 
     /**
      * long_polling | webhook
      */
-    @NotBlank
     private String mode = "long_polling";
 
     @Valid
@@ -83,12 +77,30 @@ public class BotProperties {
         this.token = token;
     }
 
+    /**
+     * Non-null token for Telegram SDK constructors. Use {@link #isBotConfigured()} before real API calls.
+     */
+    public String getTokenOrEmpty() {
+        return token == null ? "" : token;
+    }
+
     public String getUsername() {
         return username;
     }
 
+    /**
+     * Non-null username for Telegram SDK. May be empty when not configured.
+     */
+    public String getUsernameOrEmpty() {
+        return username == null ? "" : username;
+    }
+
     public void setUsername(String username) {
         this.username = username;
+    }
+
+    public boolean isBotConfigured() {
+        return token != null && !token.isBlank() && username != null && !username.isBlank();
     }
 
     public String getMode() {
