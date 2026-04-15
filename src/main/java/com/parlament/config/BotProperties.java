@@ -1,13 +1,20 @@
 package com.parlament.config;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.validation.annotation.Validated;
 
 @ConfigurationProperties(prefix = "bot")
+@Validated
 public class BotProperties {
 
+    @NotBlank(message = "bot.token must be set")
+    @Pattern(regexp = "\\d+:[A-Za-z0-9_-]{35}", message = "bot.token must be a valid Telegram bot token")
     private String token;
 
+    @NotBlank(message = "bot.username must be set")
     private String username;
 
     /**
@@ -24,6 +31,7 @@ public class BotProperties {
         /**
          * Your public base URL. Example: https://<service>.up.railway.app
          */
+        @NotBlank(message = "bot.webhook.public-url must be set when webhook is enabled")
         private String publicUrl;
 
         /**
@@ -34,6 +42,7 @@ public class BotProperties {
         /**
          * Optional secret token header validation (Telegram: X-Telegram-Bot-Api-Secret-Token).
          */
+        @Pattern(regexp = "[A-Za-z0-9_-]*", message = "bot.webhook.secret-token must contain only alphanumeric characters, underscores, and hyphens")
         private String secretToken;
 
         public boolean isEnabled() {

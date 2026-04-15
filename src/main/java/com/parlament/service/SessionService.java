@@ -4,6 +4,7 @@ import com.parlament.model.UserSession;
 import com.parlament.persistence.entity.UserSessionEntity;
 import com.parlament.persistence.repo.UserSessionJpaRepository;
 
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -126,5 +127,18 @@ public class SessionService {
         entity.setCheckoutAddress(address);
         entity.setUpdatedAt(OffsetDateTime.now());
         sessionRepo.save(entity);
+    }
+
+    /**
+     * Cleans up old sessions that haven't been updated in 30 days.
+     */
+    @Scheduled(fixedDelay = 86400000) // Run daily
+    @Transactional
+    public void cleanupOldSessions() {
+        OffsetDateTime cutoff = OffsetDateTime.now().minusDays(30);
+        int deleted = sessionRepo.deleteByUpdatedAtBefore(cutoff);
+        if (deleted > 0) {
+            // Assuming logger is added
+        }
     }
 }
