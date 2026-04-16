@@ -12,7 +12,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Manages shopping carts for all users.
- * In-memory, thread-safe implementation using ConcurrentHashMap.
+ * Thread-safe implementation using ConcurrentHashMap with synchronized inner maps.
  */
 @Service
 public class CartService {
@@ -20,20 +20,25 @@ public class CartService {
     private static final Logger log = LoggerFactory.getLogger(CartService.class);
 
     // Map: userId → (productId → CartItem)
+    // Inner maps are wrapped with synchronizedMap to prevent concurrent modification
     private final Map<Long, Map<String, CartItem>> carts = new ConcurrentHashMap<>();
 
     /**
      * Adds a product to the user's cart, or increments quantity if already present.
      */
     public void addToCart(long userId, Product product) {
-        Map<String, CartItem> cart = carts.computeIfAbsent(userId, id -> new LinkedHashMap<>());
-        CartItem existing = cart.get(product.getId());
-        if (existing != null) {
-            existing.incrementQuantity();
-            log.debug("Incremented qty for product {} in cart of user {}", product.getId(), userId);
-        } else {
-            cart.put(product.getId(), new CartItem(product));
-            log.debug("Added product {} to cart of user {}", product.getId(), userId);
+        // Use computeIfAbsent with a synchronized map to ensure thread safety on inner map
+        Map<String, CartItem> cart = carts.computeIfAbsent(userId,
+                id -> Collections.synchronizedMap(new LinkedHashMap<>()));
+        synchronized (cart) {
+            CartItem existing = cart.get(product.getId());
+            if (existing != null) {
+                existing.incrementQuantity();
+                log.debug("Incremented qty for product {} in cart of user {}", product.getId(), userId);
+            } else {
+                cart.put(product.getId(), new CartItem(product));
+                log.debug("Added product {} to cart of user {}", product.getId(), userId);
+            }
         }
     }
 
@@ -43,7 +48,9 @@ public class CartService {
     public void removeFromCart(long userId, String productId) {
         Map<String, CartItem> cart = carts.get(userId);
         if (cart != null) {
-            cart.remove(productId);
+            synchronized (cart) {
+                cart.remove(productId);
+            }
             log.debug("Removed product {} from cart of user {}", productId, userId);
         }
     }
@@ -54,7 +61,9 @@ public class CartService {
     public List<CartItem> getCartItems(long userId) {
         Map<String, CartItem> cart = carts.get(userId);
         if (cart == null || cart.isEmpty()) return Collections.emptyList();
-        return new ArrayList<>(cart.values());
+        synchronized (cart) {
+            return new ArrayList<>(cart.values());
+        }
     }
 
     /**

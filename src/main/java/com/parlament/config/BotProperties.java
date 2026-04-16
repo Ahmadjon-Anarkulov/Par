@@ -1,6 +1,5 @@
 package com.parlament.config;
 
-import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -22,7 +21,6 @@ public class BotProperties {
      */
     private String mode = "long_polling";
 
-    @Valid
     private Webhook webhook = new Webhook();
 
     public static class Webhook {
@@ -30,8 +28,8 @@ public class BotProperties {
 
         /**
          * Your public base URL. Example: https://<service>.up.railway.app
+         * Required only when webhook is enabled.
          */
-        @NotBlank(message = "bot.webhook.public-url must be set when webhook is enabled")
         private String publicUrl;
 
         /**
@@ -128,4 +126,3 @@ public class BotProperties {
         this.webhook = webhook;
     }
 }
-

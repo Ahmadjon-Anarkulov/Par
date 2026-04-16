@@ -4,6 +4,8 @@ import com.parlament.model.UserSession;
 import com.parlament.persistence.entity.UserSessionEntity;
 import com.parlament.persistence.repo.UserSessionJpaRepository;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,6 +17,8 @@ import java.time.OffsetDateTime;
  */
 @Service
 public class SessionService {
+
+    private static final Logger log = LoggerFactory.getLogger(SessionService.class);
 
     private final UserSessionJpaRepository sessionRepo;
 
@@ -138,7 +142,7 @@ public class SessionService {
         OffsetDateTime cutoff = OffsetDateTime.now().minusDays(30);
         int deleted = sessionRepo.deleteByUpdatedAtBefore(cutoff);
         if (deleted > 0) {
-            // Assuming logger is added
+            log.info("Cleaned up {} stale user sessions older than 30 days", deleted);
         }
     }
 }
