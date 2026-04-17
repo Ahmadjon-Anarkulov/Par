@@ -1,7 +1,7 @@
 package com.parlament.handler;
 
-import com.parlament.service.CartService;
 import com.parlament.service.AdminService;
+import com.parlament.service.CartService;
 import com.parlament.service.OrderService;
 import com.parlament.service.SessionService;
 import com.parlament.telegram.TelegramBotSender;
@@ -41,17 +41,18 @@ public class CommandHandler {
         String text = message.getText().trim();
         String command = text.split("\\s+")[0].toLowerCase();
 
-        log.debug("Команда от пользователя {}: {}", userId, command);
+        log.debug("Command from user {}: {}", userId, command);
 
         switch (command) {
-            case "/start"   -> handleStart(sender, chatId, message.getFrom().getFirstName(), userId);
-            case "/help"    -> handleHelp(sender, chatId);
-            case "/catalog" -> sender.sendText(buildCatalogMessage(chatId));
-            case "/cart"    -> sender.sendText(buildCartMessage(chatId, userId));
-            case "/orders"  -> sender.sendText(buildOrdersMessage(chatId, userId));
-            case "/admin"   -> handleAdmin(sender, chatId, userId);
+            case "/start"     -> handleStart(sender, chatId, message.getFrom().getFirstName(), userId);
+            case "/help"      -> handleHelp(sender, chatId);
+            case "/catalog"   -> sender.sendText(buildCatalogMessage(chatId));
+            case "/cart"      -> sender.sendText(buildCartMessage(chatId, userId));
+            case "/orders"    -> sender.sendText(buildOrdersMessage(chatId, userId));
+            case "/admin"     -> handleAdmin(sender, chatId, userId);
             case "/makeadmin" -> handleMakeAdmin(sender, chatId, userId, text);
-            default         -> sender.sendText(buildMessage(chatId, MessageFormatter.unknownCommandMessage()));
+            case "/cancel"    -> handleCancel(sender, chatId, userId);
+            default           -> sender.sendText(buildMessage(chatId, MessageFormatter.unknownCommandMessage()));
         }
     }
 
@@ -69,48 +70,60 @@ public class CommandHandler {
                 + "/catalog — Открыть каталог\n"
                 + "/cart — Открыть корзину\n"
                 + "/orders — История заказов\n"
+                + "/cancel — Отменить оформление заказа\n"
                 + "/help — Показать это сообщение";
         sender.sendText(buildMessage(chatId, helpText));
     }
 
+    private void handleCancel(TelegramBotSender sender, long chatId, long userId) {
+        sessionService.resetCheckout(userId);
+        SendMessage msg = buildMessage(chatId, MessageFormatter.checkoutCancelledMessage());
+        msg.setReplyMarkup(KeyboardFactory.mainMenuKeyboard());
+        sender.sendText(msg);
+    }
+
+    /** Opens the full admin panel with inline buttons. */
     private void handleAdmin(TelegramBotSender sender, long chatId, long userId) {
         if (!adminService.isAdmin(userId)) {
-            sender.sendText(buildMessage(chatId, "⛔ Доступ запрещён. Команда доступна только администраторам."));
+            sender.sendText(buildMessage(chatId,
+                    "⛔ Доступ запрещён. Команда доступна только администраторам."));
             return;
         }
-
-        String text = "🛡 <b>Admin Panel</b>\n\n"
-                + "Доступ подтверждён.\n"
-                + "Команды:\n"
-                + "<code>/makeadmin &lt;telegramId&gt;</code> — выдать права администратора.";
-        sender.sendText(buildMessage(chatId, text));
+        SendMessage msg = buildMessage(chatId, MessageFormatter.adminMenuMessage());
+        msg.setReplyMarkup(KeyboardFactory.adminMenuKeyboard());
+        sender.sendText(msg);
     }
 
     private void handleMakeAdmin(TelegramBotSender sender, long chatId, long actorId, String fullText) {
         if (!adminService.isAdmin(actorId)) {
-            sender.sendText(buildMessage(chatId, "⛔ Доступ запрещён. Команда доступна только администраторам."));
+            sender.sendText(buildMessage(chatId,
+                    "⛔ Доступ запрещён. Команда доступна только администраторам."));
             return;
         }
-
         String[] parts = fullText.trim().split("\\s+");
         if (parts.length < 2) {
-            sender.sendText(buildMessage(chatId, "Использование: <code>/makeadmin &lt;telegramId&gt;</code>"));
+            sender.sendText(buildMessage(chatId,
+                    "Использование: <code>/makeadmin &lt;telegramId&gt;</code>"));
             return;
         }
-
         try {
             long targetId = Long.parseLong(parts[1]);
             adminService.promoteToAdmin(actorId, targetId);
-            sender.sendText(buildMessage(chatId, "✅ Пользователь <code>" + targetId + "</code> теперь ADMIN."));
+            sender.sendText(buildMessage(chatId,
+                    "✅ Пользователь <code>" + targetId + "</code> теперь ADMIN."));
         } catch (NumberFormatException e) {
-            sender.sendText(buildMessage(chatId, "⚠️ Некорректный telegramId. Пример: <code>/makeadmin 123456789</code>"));
+            sender.sendText(buildMessage(chatId,
+                    "⚠️ Некорректный telegramId. Пример: <code>/makeadmin 123456789</code>"));
         } catch (SecurityException se) {
             sender.sendText(buildMessage(chatId, "⛔ " + se.getMessage()));
         } catch (Exception ex) {
             log.warn("makeadmin failed actor={}: {}", actorId, ex.getMessage(), ex);
-            sender.sendText(buildMessage(chatId, "⚠️ Не удалось выполнить команду. Проверьте логи."));
+            sender.sendText(buildMessage(chatId,
+                    "⚠️ Не удалось выполнить команду. Проверьте логи."));
         }
     }
+
+    // ─── Helpers ─────────────────────────────────────────────────────────────
 
     private SendMessage buildCatalogMessage(long chatId) {
         SendMessage msg = buildMessage(chatId, MessageFormatter.catalogMessage());
@@ -125,7 +138,8 @@ public class CommandHandler {
             msg = buildMessage(chatId, MessageFormatter.emptyCartMessage());
             msg.setReplyMarkup(KeyboardFactory.cartKeyboard(false));
         } else {
-            msg = buildMessage(chatId, MessageFormatter.cartMessage(items, cartService.getCartTotal(userId)));
+            msg = buildMessage(chatId,
+                    MessageFormatter.cartMessage(items, cartService.getCartTotal(userId)));
             msg.setReplyMarkup(KeyboardFactory.cartWithItemsKeyboard(items));
         }
         return msg;

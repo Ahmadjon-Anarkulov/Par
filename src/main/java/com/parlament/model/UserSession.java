@@ -2,7 +2,7 @@ package com.parlament.model;
 
 /**
  * Tracks the current conversation state / checkout flow for a user.
- * Stored in memory per user session.
+ * Stored in DB via UserSessionEntity.
  */
 public class UserSession {
 
@@ -10,16 +10,29 @@ public class UserSession {
         IDLE,
         AWAITING_NAME,
         AWAITING_PHONE,
-        AWAITING_ADDRESS
+        AWAITING_COUNTRY,
+        AWAITING_CITY,
+        AWAITING_STREET,
+        // Admin states
+        ADMIN_BROADCAST_INPUT,
+        ADMIN_CHANGE_STATUS_ORDER_ID,
+        ADMIN_CHANGE_STATUS_VALUE
     }
 
     private final long userId;
     private State state;
 
-    // Temporary checkout data collected during the flow
+    // Temporary checkout data
     private String checkoutName;
     private String checkoutPhone;
     private String checkoutAddress;
+
+    // Partial address fields (assembled into checkoutAddress at the end)
+    private String checkoutCountry;
+    private String checkoutCity;
+
+    // Admin temp data
+    private String adminTempOrderId;
 
     public UserSession(long userId) {
         this.userId = userId;
@@ -31,6 +44,9 @@ public class UserSession {
         this.checkoutName = null;
         this.checkoutPhone = null;
         this.checkoutAddress = null;
+        this.checkoutCountry = null;
+        this.checkoutCity = null;
+        this.adminTempOrderId = null;
     }
 
     // --- Getters & Setters ---
@@ -47,4 +63,13 @@ public class UserSession {
 
     public String getCheckoutAddress() { return checkoutAddress; }
     public void setCheckoutAddress(String checkoutAddress) { this.checkoutAddress = checkoutAddress; }
+
+    public String getCheckoutCountry() { return checkoutCountry; }
+    public void setCheckoutCountry(String checkoutCountry) { this.checkoutCountry = checkoutCountry; }
+
+    public String getCheckoutCity() { return checkoutCity; }
+    public void setCheckoutCity(String checkoutCity) { this.checkoutCity = checkoutCity; }
+
+    public String getAdminTempOrderId() { return adminTempOrderId; }
+    public void setAdminTempOrderId(String adminTempOrderId) { this.adminTempOrderId = adminTempOrderId; }
 }

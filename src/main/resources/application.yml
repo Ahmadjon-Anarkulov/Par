@@ -9,7 +9,7 @@ bot:
     secret-token: ${BOT_WEBHOOK_SECRET_TOKEN:}
 
 admin:
-  # If there are NO admins in DB yet, these IDs will be promoted to ADMIN on startup.
+  # Telegram user IDs that will be promoted to ADMIN on first startup (if no admins exist yet).
   # Example:
   # initial-ids:
   #   - 123456789
@@ -27,7 +27,22 @@ spring:
       hibernate:
         jdbc:
           time_zone: UTC
+    show-sql: false
     open-in-view: false
   flyway:
     enabled: true
     baseline-on-migrate: true
+
+logging:
+  level:
+    com.parlament: INFO
+    org.springframework: WARN
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      show-details: when-authorized

@@ -14,6 +14,7 @@ import java.time.OffsetDateTime;
 
 /**
  * Manages user conversation sessions and checkout state.
+ * All state is persisted to PostgreSQL via UserSessionEntity.
  */
 @Service
 public class SessionService {
@@ -26,34 +27,17 @@ public class SessionService {
         this.sessionRepo = sessionRepo;
     }
 
-    /**
-     * Returns the session for a user, creating one if it doesn't exist.
-     */
+    // ─────────────────────────── Core ───────────────────────────
+
     @Transactional
     public UserSession getOrCreate(long userId) {
         UserSessionEntity entity = sessionRepo.findById(userId).orElseGet(() -> {
-            UserSessionEntity e = new UserSessionEntity();
-            e.setTelegramUserId(userId);
-            e.setState(UserSession.State.IDLE.name());
-            e.setUpdatedAt(OffsetDateTime.now());
+            UserSessionEntity e = newEntity(userId);
             return sessionRepo.save(e);
         });
-
-        UserSession session = new UserSession(userId);
-        try {
-            session.setState(UserSession.State.valueOf(entity.getState()));
-        } catch (Exception ignored) {
-            session.setState(UserSession.State.IDLE);
-        }
-        session.setCheckoutName(entity.getCheckoutName());
-        session.setCheckoutPhone(entity.getCheckoutPhone());
-        session.setCheckoutAddress(entity.getCheckoutAddress());
-        return session;
+        return toDomain(entity);
     }
 
-    /**
-     * Resets the checkout state for a user session.
-     */
     @Transactional
     public void resetCheckout(long userId) {
         UserSessionEntity entity = sessionRepo.findById(userId).orElse(null);
@@ -62,44 +46,31 @@ public class SessionService {
         entity.setCheckoutName(null);
         entity.setCheckoutPhone(null);
         entity.setCheckoutAddress(null);
+        entity.setCheckoutCountry(null);
+        entity.setCheckoutCity(null);
+        entity.setAdminTempOrderId(null);
         entity.setUpdatedAt(OffsetDateTime.now());
         sessionRepo.save(entity);
     }
 
-    /**
-     * Returns the current state of a user's session.
-     */
     @Transactional(readOnly = true)
     public UserSession.State getState(long userId) {
         return getOrCreate(userId).getState();
     }
 
-    /**
-     * Sets the conversation state for a user.
-     */
     @Transactional
     public void setState(long userId, UserSession.State state) {
-        UserSessionEntity entity = sessionRepo.findById(userId).orElseGet(() -> {
-            UserSessionEntity e = new UserSessionEntity();
-            e.setTelegramUserId(userId);
-            e.setState(UserSession.State.IDLE.name());
-            e.setUpdatedAt(OffsetDateTime.now());
-            return e;
-        });
+        UserSessionEntity entity = getOrCreateEntity(userId);
         entity.setState(state.name());
         entity.setUpdatedAt(OffsetDateTime.now());
         sessionRepo.save(entity);
     }
 
+    // ─────────────────────────── Checkout fields ───────────────────────────
+
     @Transactional
     public void setCheckoutName(long userId, String name) {
-        UserSessionEntity entity = sessionRepo.findById(userId).orElseGet(() -> {
-            UserSessionEntity e = new UserSessionEntity();
-            e.setTelegramUserId(userId);
-            e.setState(UserSession.State.IDLE.name());
-            e.setUpdatedAt(OffsetDateTime.now());
-            return e;
-        });
+        UserSessionEntity entity = getOrCreateEntity(userId);
         entity.setCheckoutName(name);
         entity.setUpdatedAt(OffsetDateTime.now());
         sessionRepo.save(entity);
@@ -107,13 +78,7 @@ public class SessionService {
 
     @Transactional
     public void setCheckoutPhone(long userId, String phone) {
-        UserSessionEntity entity = sessionRepo.findById(userId).orElseGet(() -> {
-            UserSessionEntity e = new UserSessionEntity();
-            e.setTelegramUserId(userId);
-            e.setState(UserSession.State.IDLE.name());
-            e.setUpdatedAt(OffsetDateTime.now());
-            return e;
-        });
+        UserSessionEntity entity = getOrCreateEntity(userId);
         entity.setCheckoutPhone(phone);
         entity.setUpdatedAt(OffsetDateTime.now());
         sessionRepo.save(entity);
@@ -121,22 +86,41 @@ public class SessionService {
 
     @Transactional
     public void setCheckoutAddress(long userId, String address) {
-        UserSessionEntity entity = sessionRepo.findById(userId).orElseGet(() -> {
-            UserSessionEntity e = new UserSessionEntity();
-            e.setTelegramUserId(userId);
-            e.setState(UserSession.State.IDLE.name());
-            e.setUpdatedAt(OffsetDateTime.now());
-            return e;
-        });
+        UserSessionEntity entity = getOrCreateEntity(userId);
         entity.setCheckoutAddress(address);
         entity.setUpdatedAt(OffsetDateTime.now());
         sessionRepo.save(entity);
     }
 
-    /**
-     * Cleans up old sessions that haven't been updated in 30 days.
-     */
-    @Scheduled(fixedDelay = 86400000) // Run daily
+    @Transactional
+    public void setCheckoutCountry(long userId, String country) {
+        UserSessionEntity entity = getOrCreateEntity(userId);
+        entity.setCheckoutCountry(country);
+        entity.setUpdatedAt(OffsetDateTime.now());
+        sessionRepo.save(entity);
+    }
+
+    @Transactional
+    public void setCheckoutCity(long userId, String city) {
+        UserSessionEntity entity = getOrCreateEntity(userId);
+        entity.setCheckoutCity(city);
+        entity.setUpdatedAt(OffsetDateTime.now());
+        sessionRepo.save(entity);
+    }
+
+    // ─────────────────────────── Admin temp fields ───────────────────────────
+
+    @Transactional
+    public void setAdminTempOrderId(long userId, String orderId) {
+        UserSessionEntity entity = getOrCreateEntity(userId);
+        entity.setAdminTempOrderId(orderId);
+        entity.setUpdatedAt(OffsetDateTime.now());
+        sessionRepo.save(entity);
+    }
+
+    // ─────────────────────────── Cleanup ───────────────────────────
+
+    @Scheduled(fixedDelay = 86_400_000L)
     @Transactional
     public void cleanupOldSessions() {
         OffsetDateTime cutoff = OffsetDateTime.now().minusDays(30);
@@ -144,5 +128,35 @@ public class SessionService {
         if (deleted > 0) {
             log.info("Cleaned up {} stale user sessions older than 30 days", deleted);
         }
+    }
+
+    // ─────────────────────────── Helpers ───────────────────────────
+
+    private UserSessionEntity getOrCreateEntity(long userId) {
+        return sessionRepo.findById(userId).orElseGet(() -> sessionRepo.save(newEntity(userId)));
+    }
+
+    private UserSessionEntity newEntity(long userId) {
+        UserSessionEntity e = new UserSessionEntity();
+        e.setTelegramUserId(userId);
+        e.setState(UserSession.State.IDLE.name());
+        e.setUpdatedAt(OffsetDateTime.now());
+        return e;
+    }
+
+    private UserSession toDomain(UserSessionEntity entity) {
+        UserSession session = new UserSession(entity.getTelegramUserId());
+        try {
+            session.setState(UserSession.State.valueOf(entity.getState()));
+        } catch (Exception ignored) {
+            session.setState(UserSession.State.IDLE);
+        }
+        session.setCheckoutName(entity.getCheckoutName());
+        session.setCheckoutPhone(entity.getCheckoutPhone());
+        session.setCheckoutAddress(entity.getCheckoutAddress());
+        session.setCheckoutCountry(entity.getCheckoutCountry());
+        session.setCheckoutCity(entity.getCheckoutCity());
+        session.setAdminTempOrderId(entity.getAdminTempOrderId());
+        return session;
     }
 }

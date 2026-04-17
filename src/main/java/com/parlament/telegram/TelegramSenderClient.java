@@ -3,10 +3,11 @@ package com.parlament.telegram;
 import com.parlament.config.BotProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
 import org.springframework.context.annotation.Primary;
+import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.AnswerCallbackQuery;
+import org.telegram.telegrambots.meta.api.methods.send.SendDocument;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.send.SendPhoto;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
@@ -14,9 +15,8 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
 /**
- * A lightweight sender that can execute Telegram API calls.
- *
- * Used for webhook mode, where updates come through HTTP controller rather than Telegram long polling.
+ * Primary TelegramBotSender implementation.
+ * Works for both long-polling and webhook modes (just executes API calls).
  */
 @Component
 @Primary
@@ -36,17 +36,16 @@ public class TelegramSenderClient extends TelegramLongPollingBot implements Tele
         return props.getUsernameOrEmpty();
     }
 
+    /** Not used — updates arrive via UpdateProcessor */
     @Override
-    public void onUpdateReceived(Update update) {
-        // not used
-    }
+    public void onUpdateReceived(Update update) {}
 
     @Override
     public void sendText(SendMessage message) {
         try {
             execute(message);
         } catch (TelegramApiException e) {
-            log.warn("Failed to send message: {}", e.getMessage(), e);
+            log.warn("sendText failed: {}", e.getMessage());
         }
     }
 
@@ -55,7 +54,16 @@ public class TelegramSenderClient extends TelegramLongPollingBot implements Tele
         try {
             execute(photo);
         } catch (TelegramApiException e) {
-            log.warn("Failed to send photo: {}", e.getMessage(), e);
+            log.warn("sendPhoto failed: {}", e.getMessage());
+        }
+    }
+
+    @Override
+    public void sendDocument(SendDocument document) {
+        try {
+            execute(document);
+        } catch (TelegramApiException e) {
+            log.warn("sendDocument failed: {}", e.getMessage());
         }
     }
 
@@ -64,7 +72,7 @@ public class TelegramSenderClient extends TelegramLongPollingBot implements Tele
         try {
             execute(editMessage);
         } catch (TelegramApiException e) {
-            log.warn("Failed to edit message: {}", e.getMessage(), e);
+            log.warn("editMessage failed: {}", e.getMessage());
         }
     }
 
@@ -73,8 +81,7 @@ public class TelegramSenderClient extends TelegramLongPollingBot implements Tele
         try {
             execute(answerCallbackQuery);
         } catch (TelegramApiException e) {
-            log.warn("Failed to answer callback: {}", e.getMessage(), e);
+            log.warn("answerCallback failed: {}", e.getMessage());
         }
     }
 }
-
